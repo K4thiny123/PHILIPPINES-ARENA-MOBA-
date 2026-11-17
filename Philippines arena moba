@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+<title>PHILIPPINES ARENA MOBA</title>
+<style>
+  :root {
+    --void:#070a12; --surf:#0f1624; --elev:#172033; --border:#283550;
+    --gold:#f5b942; --blue:#29b6f6; --red:#ef4444; --green:#22c55e; --pearl:#f8fafc; --mist:#94a3b8;
+  }
+  *{box-sizing:border-box;user-select:none;-webkit-user-select:none;touch-action:none}
+  html,body{margin:0;padding:0;width:100%;height:100%;background:var(--void);color:var(--pearl);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
+  .screen{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:18px}
+  .screen.active{display:flex}
+  /* INTRO */
+  #intro{background:radial-gradient(circle at 50% 35%,#1a2744 0%,#070a12 72%)}
+  .crest{width:124px;height:124px;border-radius:50%;border:3px solid var(--gold);display:grid;place-items:center;background:radial-gradient(circle,#1e293b,#0b1020);box-shadow:0 0 42px rgba(245,185,66,.45);animation:pulse 2s infinite alternate}
+  @keyframes pulse{from{transform:scale(.96);box-shadow:0 0 24px rgba(245,185,66,.35)}to{transform:scale(1.04);box-shadow:0 0 54px rgba(41,182,246,.55)}}
+  .title{font-size:clamp(28px,6vw,52px);font-weight:900;letter-spacing:2px;text-align:center;margin:16px 0 8px;background:linear-gradient(180deg,#fff3c4,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{color:var(--mist);text-align:center;max-width:440px;font-size:14px;line-height:1.5}
+  .btn{margin-top:22px;padding:14px 28px;border:none;border-radius:14px;background:var(--gold);color:var(--void);font-weight:800;font-size:15px;letter-spacing:1px;cursor:pointer}
+  .btn:active{transform:scale(.97)}
+  .btn-sec{background:var(--elev);color:var(--pearl);border:1px solid var(--border)}
+  /* DRAFT */
+  #draft{justify-content:flex-start;padding-top:24px;overflow-y:auto;touch-action:pan-y}
+  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:760px;width:100%}
+  .card{background:var(--surf);border:1.5px solid var(--border);border-radius:14px;padding:10px 12px;cursor:pointer;min-width:130px;flex:1 1 130px}
+  .card.sel{border-color:var(--gold);background:var(--elev)}
+  .badge{display:inline-block;font-size:10px;font-weight:800;padding:2px 6px;border-radius:5px;margin-bottom:4px}
+  /* ARENA */
+  #arena{padding:0;display:none}
+  #arena.active{display:block}
+  #gameCanvas{width:100%;height:100%;display:block}
+  .hud-top{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none}
+  .pill{pointer-events:auto;background:rgba(7,10,18,.84);border:1px solid var(--border);border-radius:12px;padding:6px 12px;display:flex;gap:10px;align-items:center;font-weight:700;font-size:14px}
+  #minimap{pointer-events:auto;width:96px;height:96px;border-radius:10px;border:1.5px solid rgba(245,185,66,.6);background:rgba(10,20,26,.9)}
+  #banner{position:absolute;top:72px;left:50%;transform:translateX(-50%);background:rgba(7,10,18,.9);border:1.5px solid var(--gold);border-radius:12px;padding:6px 16px;text-align:center;font-weight:800;color:var(--gold);display:none;pointer-events:none}
+  /* CONTROLS */
+  #joyZone{position:absolute;left:18px;bottom:18px;width:126px;height:126px;border-radius:50%;background:rgba(15,22,36,.65);border:2px solid rgba(245,185,66,.45)}
+  #joyKnob{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;background:var(--gold);border:2px solid #fff;pointer-events:none}
+  .skills{position:absolute;right:16px;bottom:18px;display:grid;grid-template-columns:repeat(2,62px);gap:10px;align-items:end}
+  .sk{width:60px;height:60px;border-radius:50%;background:var(--elev);border:2px solid var(--blue);color:var(--pearl);font-weight:800;font-size:12px;display:grid;place-items:center;cursor:pointer;position:relative}
+  .sk.ult{border-color:var(--gold);color:var(--gold)}
+  .sk.atk{width:70px;height:70px;background:var(--gold);color:var(--void);border-color:#fff;font-size:13px}
+  .sk.cd{opacity:.48}
+  /* SHOP & RESULT */
+  #shopModal{position:absolute;inset:0;background:rgba(7,10,18,.82);display:none;place-items:center;padding:16px;z-index:20}
+  #shopModal.open{display:grid}
+  .modalBox{background:var(--surf);border:1.5px solid var(--gold);border-radius:18px;padding:16px;max-width:440px;width:100%;max-height:85vh;overflow-y:auto;touch-action:pan-y}
+  .shopRow{display:flex;justify-content:space-between;align-items:center;background:var(--elev);padding:10px;border-radius:10px;margin-top:8px;gap:8px}
+</style>
+</head>
+<body>
+
+<!-- INTRO SCREEN -->
+<section id="intro" class="screen active">
+  <div class="crest">
+    <svg width="68" height="68" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="14" fill="#f5b942"/>
+      <path d="M32 4 L36 16 L28 16 Z M32 60 L36 48 L28 48 Z M4 32 L16 28 L16 36 Z M60 32 L48 28 L48 36 Z M12 12 L22 18 L17 23 Z M52 52 L42 46 L47 41 Z M52 12 L42 18 L47 23 Z M12 52 L22 46 L17 41 Z" fill="#ffd875"/>
+      <circle cx="32" cy="32" r="6" fill="#29b6f6"/>
+    </svg>
+  </div>
+  <div style="color:var(--blue);font-size:11px;font-weight:800;letter-spacing:2.5px;margin-top:16px">THREE ISLANDS • FIVE LEGENDS • ONE NEXUS</div>
+  <h1 class="title">PHILIPPINES<br/>ARENA MOBA</h1>
+  <p class="sub">Command mythic warriors of Luzon, Visayas, and Mindanao across Perlas Rift. Push lanes, slay Bakunawa, and shatter the enemy Nexus.</p>
+  <button class="btn" onclick="goDraft()">ENTER THE ARENA</button>
+</section>
+
+<!-- HERO DRAFT & MODE SCREEN -->
+<section id="draft" class="screen">
+  <h2 style="margin:0 0 6px;color:var(--gold)">HERO DRAFT — PERLAS RIFT</h2>
+  <div class="row" id="modeRow" style="margin-bottom:14px"></div>
+  <div class="row" id="heroRow"></div>
+  <div id="heroInfo" style="margin-top:12px;max-width:760px;width:100%;background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:12px;font-size:13px;color:var(--mist)"></div>
+  <button class="btn" onclick="startMatch()">LOCK IN & BATTLE</button>
+</section>
+
+<!-- LIVE ARENA SCREEN -->
+<section id="arena" class="screen">
+  <canvas id="gameCanvas"></canvas>
+  <div class="hud-top">
+    <canvas id="minimap" width="96" height="96"></canvas>
+    <div class="pill">
+      <span style="color:var(--blue)" id="blueKills">0</span>
+      <span style="color:var(--mist);font-size:11px">VS</span>
+      <span style="color:var(--red)" id="redKills">0</span>
+      <span>|</span>
+      <span id="clock">00:00</span>
+      <span>|</span>
+      <span style="color:var(--gold)" id="kdaText">0/0/0</span>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="pill" style="color:var(--gold);cursor:pointer" onclick="toggleShop(true)">Shop <span id="goldText">550g</span></button>
+      <button class="pill" style="cursor:pointer" onclick="exitLobby()">Exit</button>
+    </div>
+  </div>
+  <div id="banner"></div>
+  <div id="joyZone"><div id="joyKnob"></div></div>
+  <div class="skills">
+    <button class="sk" id="btnS2" onclick="castAction('S2')">S2</button>
+    <button class="sk ult" id="btnUlt" onclick="castAction('ULT')">ULT</button>
+    <button class="sk" id="btnS1" onclick="castAction('S1')">S1</button>
+    <button class="sk atk" onclick="castAction('ATK')">ATK</button>
+  </div>
+  <div id="shopModal">
+    <div class="modalBox">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <strong style="color:var(--gold)">PERLAS ARMORY SHOP</strong>
+        <button class="btn btn-sec" style="margin:0;padding:6px 12px" onclick="toggleShop(false)">Close</button>
+      </div>
+      <div id="shopList"></div>
+    </div>
+  </div>
+</section>
+
+<!-- RESULT SCREEN -->
+<section id="result" class="screen">
+  <h1 id="resTitle" class="title">VICTORY</h1>
+  <p id="resSub" class="sub"></p>
+  <div style="display:flex;gap:10px">
+    <button class="btn btn-sec" onclick="exitLobby()">LOBBY</button>
+    <button class="btn" onclick="startMatch()">PLAY AGAIN</button>
+  </div>
+</section>
+
+<script>
+const WORLD = 2400;
+const HEROES = [
+  { id:'datu', name:'Datu Kalasag', role:'Fighter', color:'#f5b942', hp:1150, atk:88, spd:235, rng:115, cd:.7, desc:'Mactan Blade • Kampilan Cleave, Shield Dash & Sun of Mactan stun' },
+  { id:'urduja', name:'Lakambini Urduja', role:'Mage', color:'#29b6f6', hp:860, atk:74, spd:225, rng:250, cd:.78, desc:'Storm Weaver • Kidlat Bolt, Baybayin Sigil & Typhoon Wrath' },
+  { id:'bagani', name:'Bagani Silang', role:'Assassin', color:'#ef4444', hp:920, atk:96, spd:255, rng:165, cd:.58, desc:'Shadow of Mayon • Balisong Volley, Smoke Blink & Mayon Execution' },
+  { id:'bato', name:'Bato-Gubat', role:'Tank', color:'#22c55e', hp:1480, atk:76, spd:215, rng:110, cd:.84, desc:'Cordillera Titan • Terrace Slam, Granite Bulwark & Tectonic Quake' },
+  { id:'tala', name:'Tala Diwata', role:'Support', color:'#a855f7', hp:900, atk:72, spd:232, rng:260, cd:.75, desc:'Moonlight Guardian • Lunar Bolt, Balete Heal & Eclipse Sanctuary' }
+];
+const MODES = [
+  { id:5, title:'5v5 Archipelago War', sub:'Full 3-Lane Perlas Rift' },
+  { id:3, title:'3v3 Quick Clash', sub:'Fast-paced 3-Hero Brawl' },
+  { id:1, title:'1v1 Mid Duel', sub:'Pasig Bridge Showdown' }
+];
+const ITEMS = [
+  { id:'bakya', name:'Swift Bakya Boots', cost:450, spd:42, atk:0, hp:0, desc:'+42 Move Speed' },
+  { id:'kampilan', name:'Kampilan Edge', cost:750, spd:0, atk:36, hp:0, desc:'+36 Attack Power' },
+  { id:'kalasag', name:'Kalasag Iron Plate', cost:700, spd:0, atk:0, hp:340, desc:'+340 Max HP' },
+  { id:'pearl', name:'Pearl of the Orient', cost:1100, spd:18, atk:32, hp:180, desc:'+32 ATK • +180 HP • +18 SPD' },
+  { id:'crown', name:"Bathala's Crown", cost:1600, spd:15, atk:60, hp:420, desc:'+60 ATK • +420 HP' }
+];
+
+let selMode = 5, selHero = HEROES[0], world = null, rafId = 0, lastT = 0;
+const keys = {}, joy = { x:0, y:0 };
+
+// Web Audio Gong & SFX
+let actx = null;
+function sfx(freq, dur, type='sine', vol=.15){
+  try{
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, actx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(Math.max(40, freq * .45), actx.currentTime + dur);
+    g.gain.setValueAtTime(vol, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001, actx.currentTime + dur);
+    o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + dur);
+  }catch(e){}
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goDraft(){ sfx(220,.45,'triangle',.2); renderDraft(); showScreen('draft'); }
+function exitLobby(){ cancelAnimationFrame(rafId); world=null; renderDraft(); showScreen('draft'); }
+
+function renderDraft(){
+  document.getElementById('modeRow').innerHTML = MODES.map(m =>
+    `<div class="card ${selMode===m.id?'sel':''}" onclick="selMode=${m.id};renderDraft();sfx(440,.08)">
+      <div class="badge" style="background:rgba(245,185,66,.2);color:var(--gold)">${m.id}V${m.id}</div>
+      <div style="font-weight:800;font-size:14px">${m.title}</div>
+      <div style="font-size:11px;color:var(--mist)">${m.sub}</div>
+    </div>`
+  ).join('');
+  document.getElementById('heroRow').innerHTML = HEROES.map(h =>
+    `<div class="card ${selHero.id===h.id?'sel':''}" onclick="selHero=HEROES.find(x=>x.id==='${h.id}');renderDraft();sfx(520,.08)">
+      <div class="badge" style="background:${h.color}33;color:${h.color}">${h.role.toUpperCase()}</div>
+      <div style="font-weight:800;font-size:14px">${h.name}</div>
+      <div style="font-size:11px;color:var(--mist)">HP ${h.hp} • ATK ${h.atk}</div>
+    </div>`
+  ).join('');
+  document.getElementById('heroInfo').innerHTML = `<strong style="color:${selHero.color}">${selHero.name}</strong> — ${selHero.desc}`;
+}
+
+function startMatch(){
+  sfx(140,.7,'triangle',.25);
+  showScreen('arena');
+  const lanes = selMode===1 ? ['MID'] : ['MID','TOP','BOT','TOP','BOT'];
+  const heroes = [];
+  const mkHero = (spec, team, isPlayer, lane, idx) => ({
+    uid: (isPlayer?'p_':team+'_')+idx, spec, team, isPlayer, lane,
+    x: team==='BLUE'? 210 + (idx%3)*45 : 2190 - (idx%3)*45,
+    y: team==='BLUE'? 2190 - (idx%2)*45 : 210 + (idx%2)*45,
+    ang: team==='BLUE'? -.78 : 2.35,
+    hp: spec.hp, maxHp: spec.hp, atk: spec.atk, spd: spec.spd,
+    lvl:1, xp:0, gold:550, k:0, d:0, a:0,
+    atkCd:0, s1Cd:0, s2Cd:0, ultCd:0, respawn:0, stun:0, items:[]
+  });
+  heroes.push(mkHero(selHero,'BLUE',true,'MID',0));
+  for(let i=1;i<selMode;i++) heroes.push(mkHero(HEROES[(HEROES.indexOf(selHero)+i)%HEROES.length],'BLUE',false,lanes[i],i));
+  for(let i=0;i<selMode;i++) heroes.push(mkHero(HEROES[(i+1)%HEROES.length],'RED',false,lanes[i],i));
+
+  const turrets = [
+    {team:'BLUE',nexus:true,x:250,y:2150,hp:2600,maxHp:2600,rng:270,dmg:130,cd:0},
+    {team:'RED',nexus:true,x:2150,y:250,hp:2600,maxHp:2600,rng:270,dmg:130,cd:0},
+    {team:'BLUE',nexus:false,x:860,y:1540,hp:1500,maxHp:1500,rng:235,dmg:105,cd:0},
+    {team:'RED',nexus:false,x:1540,y:860,hp:1500,maxHp:1500,rng:235,dmg:105,cd:0}
+  ];
+  if(selMode>1){
+    turrets.push(
+      {team:'BLUE',nexus:false,x:220,y:1120,hp:1500,maxHp:1500,rng:235,dmg:105,cd:0},
+      {team:'RED',nexus:false,x:1120,y:220,hp:1500,maxHp:1500,rng:235,dmg:105,cd:0},
+      {team:'BLUE',nexus:false,x:1280,y:2180,hp:1500,maxHp:1500,rng:235,dmg:105,cd:0},
+      {team:'RED',nexus:false,x:2180,y:1280,hp:1500,maxHp:1500,rng:235,dmg:105,cd:0}
+    );
+  }
+  const boss = selMode>1 ? [{name:'Bakunawa',x:780,y:780,hp:2200,maxHp:2200,respawn:0}] : [];
+  world = { t:0, nextWave:1.5, bKills:0, rKills:0, heroes, turrets, minions:[], proj:[], vfx:[], texts:[], boss, winner:null };
+  showBanner('WELCOME TO PERLAS RIFT!');
+  lastT = performance.now();
+  cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(loop);
+}
+
+function showBanner(msg){
+  const el = document.getElementById('banner');
+  el.textContent = msg; el.style.display = 'block';
+  clearTimeout(el._t); el._t = setTimeout(()=> el.style.display='none', 2600);
+}
+
+function toggleShop(open){
+  const m = document.getElementById('shopModal');
+  m.classList.toggle('open', open);
+  if(open && world){
+    const p = world.heroes[0];
+    document.getElementById('shopList').innerHTML = ITEMS.map(it => {
+      const owned = p.items.includes(it.id);
+      return `<div class="shopRow">
+        <div><strong style="color:var(--pearl)">${it.name}</strong><div style="font-size:12px;color:var(--mist)">${it.desc}</div></div>
+        <button class="btn" style="margin:0;padding:8px 12px;opacity:${(!owned && p.gold>=it.cost)?1:.4}" onclick="buyItem('${it.id}')">${owned?'OWNED':it.cost+'g'}</button>
+      </div>`;
+    }).join('');
+  }
+}
+
+function buyItem(id){
+  const p = world.heroes[0], it = ITEMS.find(x=>x.id===id);
+  if(!it || p.items.includes(id) || p.gold < it.cost) return;
+  p.gold -= it.cost; p.items.push(id);
+  p.spd += it.spd; p.atk += it.atk; p.maxHp += it.hp; p.hp += it.hp;
+  sfx(980,.15,'sine',.2);
+  toggleShop(true);
+}
+
+function castAction(act){
+  if(!world || world.winner) return;
+  const p = world.heroes[0];
+  heroAct(p, act);
+}
+
+function dist(ax,ay,bx,by){ return Math.hypot(bx-ax, by-ay); }
+
+function heroAct(h, act){
+  if(h.respawn>0 || h.stun>0) return;
+  const enemies = world.heroes.filter(e=>e.team!==h.team && e.respawn<=0);
+  const target = enemies.concat(world.minions.filter(m=>m.team!==h.team))
+    .concat(world.turrets.filter(t=>t.team!==h.team && t.hp>0))
+    .sort((a,b)=>dist(h.x,h.y,a.x,a.y)-dist(h.x,h.y,b.x,b.y))[0];
+  if(target && dist(h.x,h.y,target.x,target.y) < 360) h.ang = Math.atan2(target.y-h.y, target.x-h.x);
+
+  const areaHit = (cx,cy,rad,dmg,stun=0)=>{
+    world.heroes.forEach(e=>{ if(e.team!==h.team && e.respawn<=0 && dist(cx,cy,e.x,e.y)<=rad+24){ if(stun) e.stun=Math.max(e.stun,stun); damageHero(e,dmg,h); } });
+    world.minions.forEach(m=>{ if(m.team!==h.team && m.hp>0 && dist(cx,cy,m.x,m.y)<=rad+18){ m.hp-=dmg; if(m.hp<=0) grant(h,38,50); } });
+    world.turrets.forEach(t=>{ if(t.team!==h.team && t.hp>0 && dist(cx,cy,t.x,t.y)<=rad+40){ t.hp-=dmg*.65; if(t.hp<=0){ showBanner((t.nexus?'NEXUS':'TURRET')+' DESTROYED!'); sfx(90,.5,'sawtooth',.25); } } });
+    world.boss.forEach(b=>{ if(b.hp>0 && dist(cx,cy,b.x,b.y)<=rad+44){ b.hp-=dmg; if(b.hp<=0){ b.respawn=45; grant(h,260,220); h.atk+=22; showBanner('BAKUNAWA SLAIN! +ATK BUFF'); } } });
+  };
+
+  if(act==='ATK'){
+    if(h.atkCd>0) return;
+    h.atkCd = h.spec.cd;
+    if(h.isPlayer) sfx(380,.09,'triangle',.12);
+    if(h.spec.rng<=170){
+      world.vfx.push({x:h.x,y:h.y,r:h.spec.rng,col:h.spec.color,life:.22,max:.22});
+      areaHit(h.x+Math.cos(h.ang)*45, h.y+Math.sin(h.ang)*45, h.spec.rng*.85, h.atk);
+    } else {
+      world.proj.push({team:h.team,owner:h,x:h.x,y:h.y,vx:Math.cos(h.ang)*680,vy:Math.sin(h.ang)*680,dmg:h.atk,col:h.spec.color,life:.5});
+    }
+  } else if(act==='S1' && h.s1Cd<=0){
+    h.s1Cd = 4.2; if(h.isPlayer) sfx(620,.2,'sawtooth',.16);
+    world.proj.push({team:h.team,owner:h,x:h.x,y:h.y,vx:Math.cos(h.ang)*760,vy:Math.sin(h.ang)*760,dmg:h.atk*1.9,col:h.spec.color,life:.55});
+  } else if(act==='S2' && h.s2Cd<=0){
+    h.s2Cd = 6.8; if(h.isPlayer) sfx(480,.24,'sine',.18);
+    if(h.spec.id==='tala'){ h.hp=Math.min(h.maxHp,h.hp+260); addTxt(h.x,h.y,'+260','#22c55e'); }
+    else { h.x=Math.max(60,Math.min(WORLD-60,h.x+Math.cos(h.ang)*155)); h.y=Math.max(60,Math.min(WORLD-60,h.y+Math.sin(h.ang)*155)); }
+    world.vfx.push({x:h.x,y:h.y,r:130,col:h.spec.color,life:.35,max:.35});
+    areaHit(h.x,h.y,130,h.atk*1.5);
+  } else if(act==='ULT' && h.ultCd<=0){
+    h.ultCd = 15; if(h.isPlayer) sfx(160,.48,'sawtooth',.24);
+    world.vfx.push({x:h.x,y:h.y,r:230,col:h.spec.color,life:.55,max:.55});
+    areaHit(h.x,h.y,230,h.atk*3.2,1.2);
+  }
+}
+
+function grant(h,g,xp){
+  h.gold+=g; h.xp+=xp;
+  if(h.isPlayer && g>0) addTxt(h.x,h.y-20,`+${g}g`,'#f5b942');
+  while(h.lvl<15 && h.xp>=h.lvl*160){ h.xp-=h.lvl*160; h.lvl++; h.maxHp+=110; h.hp+=110; h.atk+=8; if(h.isPlayer) addTxt(h.x,h.y-35,'LEVEL UP!','#ffd875'); }
+}
+function addTxt(x,y,txt,col){ world.texts.push({x,y,txt,col,life:.8}); }
+
+function damageHero(e, dmg, killer){
+  e.hp -= dmg;
+  if(e.isPlayer || killer?.isPlayer) addTxt(e.x,e.y-18,`-${Math.round(dmg)}`,'#ef4444');
+  if(e.hp<=0){
+    e.hp=0; e.d++; e.respawn=7+e.lvl;
+    if(e.team==='BLUE') world.rKills++; else world.bKills++;
+    if(killer){ killer.k++; grant(killer,240,200); showBanner(`${killer.spec.name} SLAIN ${e.spec.name}!`); sfx(580,.35,'triangle',.22); }
+  }
+}
+
+function loop(now){
+  const dt = Math.min(.045, (now - lastT)/1000); lastT = now;
+  step(dt); draw();
+  if(world && !world.winner) rafId = requestAnimationFrame(loop);
+}
+
+function step(dt){
+  world.t += dt;
+  // Waves
+  if(world.t >= world.nextWave){
+    world.nextWave = world.t + 12;
+    const lanes = selMode===1 ? ['MID'] : ['TOP','MID','BOT'];
+    lanes.forEach(l=>['BLUE','RED'].forEach(team=>{
+      for(let i=0;i<3;i++) world.minions.push({
+        team,lane:l,x:team==='BLUE'?260+i*24:2140-i*24,y:team==='BLUE'?2140-i*24:260+i*24,
+        hp:320,maxHp:320,dmg:22,cd:0,wp:0
+      });
+    }));
+  }
+  // Heroes
+  world.heroes.forEach(h=>{
+    if(h.respawn>0){ h.respawn-=dt; if(h.respawn<=0){ h.hp=h.maxHp; h.x=h.team==='BLUE'?210:2190; h.y=h.team==='BLUE'?2190:210; } return; }
+    h.atkCd=Math.max(0,h.atkCd-dt); h.s1Cd=Math.max(0,h.s1Cd-dt); h.s2Cd=Math.max(0,h.s2Cd-dt); h.ultCd=Math.max(0,h.ultCd-dt); h.stun=Math.max(0,h.stun-dt);
+    h.gold += 3*dt; h.hp = Math.min(h.maxHp, h.hp + 8*dt);
+    if(h.stun>0) return;
+    if(h.isPlayer){
+      let mx = joy.x + (keys['KeyD']||keys['ArrowRight']?1:0) - (keys['KeyA']||keys['ArrowLeft']?1:0);
+      let my = joy.y + (keys['KeyS']||keys['ArrowDown']?1:0) - (keys['KeyW']||keys['ArrowUp']?1:0);
+      const m = Math
